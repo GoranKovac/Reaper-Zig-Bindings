@@ -25,7 +25,8 @@ zig_fnPtrs = []
 zig_functions = []
 
 #we are hardcoding mergesort so we will store temporary comments from parsing
-mergesort_comment = None
+mergesort_comment = ''
+start = None
 
 def handle_comments(comment):
     #there are some invalid characters in header
@@ -99,6 +100,7 @@ def walk_parm(node, param_ptr_array, param_fn_array):
 def walk_fn(node):
     global zig_functions
     global mergesort_comment
+    global start
     #for pointers 'var ...'
     param_ptr_array = []
     fn_ptr_str = ''
@@ -108,14 +110,18 @@ def walk_fn(node):
     
     comment_str = ''
     is_func = None
+    #start only when __mergesort is found (api begins there)
+    if (node.spelling or node.displayname) == "__mergesort":
+        start = True
     #check if line is function
-    if node.kind == clang.cindex.CursorKind.VAR_DECL:
+    if node.kind == clang.cindex.CursorKind.VAR_DECL and start:
+        print(node.spelling or node.displayname)
         #ignore __mergesort, we will hardcode it since its complicated
         is_func = True if (node.spelling or node.displayname) != "__mergesort" else None
         #store mergesort comment since we need to insert it later
         if (node.spelling or node.displayname) == "__mergesort":
             mergesort_comment = node.raw_comment
-        comment_str = node.raw_comment
+        comment_str = node.raw_comment if node.raw_comment != None else ''
         #prepare pointer string
         fn_ptr_str = fn_ptr_str + '\tpub var ' + (node.spelling or node.displayname) +': *fn ('
         #prepare function wrapper string
@@ -126,7 +132,7 @@ def walk_fn(node):
             #get function parameters
             walk_parm(c, param_ptr_array, param_fn_array)
     #check if array has parameters so it does not create empty strings
-    if len(param_ptr_array) > 0:
+    if is_func:
         #concat all arguments
         ptr_args = ', '.join(param_ptr_array)
         fn_args = ', '.join(param_fn_array)
@@ -143,6 +149,7 @@ def walk_fn(node):
         zig_functions.append(fn_str)
 
         zig_fnPtrs.append(fn_ptr_str)
+
 
 index = clang.cindex.Index.create()
 walk_fn(index.parse('reaper_plugin_functions.h', args='-x c++ -lc++ -std=c++14 -fsyntax-only -fparse-all-comments'.split()).cursor)
