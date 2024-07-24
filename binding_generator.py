@@ -172,10 +172,8 @@ def walk_fn(node):
         zig_fnPtrs.append(fn_ptr_str)
 
 
-h_path = os.path.realpath(os.path.join(os.getcwd())) +  "/src/lib/"
-print(h_path)
 index = clang.cindex.Index.create()
-walk_fn(index.parse(h_path + 'reaper_plugin_functions.h', args='-x c++ -lc++ -std=c++14 -fsyntax-only -fparse-all-comments'.split()).cursor)
+walk_fn(index.parse('reaper_plugin_functions.h', args='-x c++ -lc++ -std=c++14 -fsyntax-only -fparse-all-comments'.split()).cursor)
 #hardcode __mergesort
 zig_fnPtrs.insert(0,'\tpub var __mergesort: *fn (base: ?*anyopaque,  nmemb: usize, size: usize, cmpfunc: ?*fn(*const anyopaque, *const anyopaque) callconv(.C) c_int, tmpspace: ?*anyopaque) callconv(.C) void = undefined;')
 zig_functions.insert(0,'pub fn __mergesort(base: ?*anyopaque,  nmemb: usize, size: usize, cmpfunc: ?*fn(*const anyopaque, *const anyopaque) c_int, tmpspace: ?*anyopaque) void {\n\treturn fnPtrs.__mergesort(base,  nmemb, size, cmpfunc, tmpspace);\n}')
@@ -183,6 +181,6 @@ zig_functions.insert(0, '\n' + mergesort_comment)
 #create final string
 zig_string = ('\n'.join(zig_opaques) + '\n' + '\npub const fnPtrs = struct {\n%s\n' % '\n'.join(zig_fnPtrs) + '};\n' + '\n'.join(zig_functions))
 #write string to file
-with open(h_path + "reaper_functions.zig", "w") as text_file:
+with open("reaper_functions.zig", "w") as text_file:
     #text_file.write('\n'.join(zig_functions))
     text_file.write(zig_string)
