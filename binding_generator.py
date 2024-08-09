@@ -100,7 +100,7 @@ def add_reaper_type(stripped_type):
         #keep track of inserted type
         if not stripped_type in reaper_types:
             reaper_types.append(stripped_type)
-            zig_opaques.append('const ' + stripped_type + ' = *opaque {};')
+            zig_opaques.append('pub const ' + stripped_type + ' = *opaque {};')
     return is_reaper
 
 def walk_parm(node, param_ptr_array, param_fn_array):
